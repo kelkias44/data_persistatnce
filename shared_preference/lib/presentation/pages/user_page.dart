@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preference/data/data_source/local_data_source.dart';
 import 'package:shared_preference/data/model/user_data.dart';
 import 'package:shared_preference/data/repository/user_data_repository_impl.dart';
 import 'package:shared_preference/domain/repository/user_data_repository.dart';
+import 'package:shared_preference/presentation/bloc/bloc/user_data_bloc.dart';
 
+import '../../service_locator.dart';
 import '../widgets/birthday_widget.dart';
 import '../widgets/button_widget.dart';
 import '../widgets/pets_button_widget.dart';
@@ -12,6 +15,7 @@ import '../widgets/pets_button_widget.dart';
 
 class HomePage extends StatefulWidget {
   
+  
   HomePage({ Key? key }) : super(key: key);
 
   @override
@@ -19,7 +23,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late UserDataRepositoryImpl userDataRepositoryImpl;
+  LocalDataStorageImpl localDataStorage = LocalDataStorageImpl();
+  UserDataRepositoryImpl? userDataRepositoryImpl;
   final formKey = GlobalKey<FormState>();
   UserData? userData;
   //  String? name = '';
@@ -27,10 +32,7 @@ class _HomePageState extends State<HomePage> {
   // List<String> pets = [];
 
   void initState()async{
-    super.initState();
-
-    userData = await userDataRepositoryImpl.getUserDataRepo(); 
-    
+    super.initState();     
   }
   @override
   Widget build(BuildContext context) {
@@ -41,48 +43,83 @@ class _HomePageState extends State<HomePage> {
           children: <Widget>[
             const SizedBox(height: 32,),
             buildName(),
+            const SizedBox(height: 12,),
+            const SizedBox(height: 12,), 
+
           ],
         )
-        ),      
+        ),    
     );
 
    
   } 
   Widget buildName(){
-    return buildTitle(
-      title: 'Name',
-      child: TextFormField(
-        initialValue: userData!.name,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          hintText: 'Your Name',
-        ),
-        onChanged: (name)=>setState(() {
-          this.userData!.name = name;
-        }),
-      )
+    return FutureBuilder<UserData>(
+      future:  localDataStorage.getUserData(),
+      builder: (context,snapshot){
+        if(snapshot.hasData){
+          return buildTitle(
+        title: 'Name',
+        child: TextFormField(
+          initialValue: snapshot.data!.name,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Your Name',
+          ),
+          onChanged: (name)=>setState(() {
+            snapshot.data!.name = name;
+          }),
+        )
+      );
+        }else{
+          return const Text('Error to display data');
+        }
+      },
+      
     );
   }
   Widget buildBirthday(){
-    return BirthdayWidget(
-      birthday: userData!.birthday ?? DateTime.now(),
-      onChangedBirthday: (birthday) =>
-        setState(()=> this.userData!.birthday = birthday),
+    return FutureBuilder<UserData>(
+      future: localDataStorage.getUserData(),
+      builder: (context,snapshot){
+        if(snapshot.hasData){
+           return BirthdayWidget(
+        birthday: snapshot.data!.birthday ?? DateTime.now(),
+        onChangedBirthday: (birthday) =>
+          setState(()=> snapshot.data!.birthday = birthday),
+      );
+        }else{
+          return const Text('Error to display data');
+        }
+      },
     );
   }
-  Widget buildPet() => buildTitle(
-    title: 'Pets',
-    child: PetsButtonsWidget(
-      pets: userData!.pets,
-      onSelectedPet: (pet) => setState(
-        ()=> userData!.pets.contains(pet)? userData!.pets.remove(pet) : userData!.pets.add(pet)
-        )
-    ));
+  Widget buildPet() { 
+    return FutureBuilder<UserData>(
+      future: localDataStorage.getUserData(),
+      builder: (context,snapshot){
+        if(snapshot.hasData){
+          return buildTitle(
+      title: 'Pets',
+      child: PetsButtonsWidget(
+        pets: snapshot.data!.pets,
+        onSelectedPet: (pet) => setState(
+          ()=> snapshot.data!.pets.contains(pet)? snapshot.data!.pets.remove(pet) : snapshot.data!.pets.add(pet)
+          )
+      ));
+        }else{
+          return const Text('Error to display data');
+        }
+      },
+      
+    );}
   Widget buildButton(){
     return ButtonWidget(
       text: 'Save',
       onClicked: () async {
-        await userDataRepositoryImpl.setUserDataRepo(UserData(name: userData!.name, birthday: userData!.birthday, pets: userData!.pets));
+        sl<UserDataBloc>().add(onSettingUserData(UserData(name: userData!.name, birthday: userData!.birthday, pets: userData!.pets)));
+
+        // await userDataRepositoryImpl!.setUserDataRepo(UserData(name: userData!.name, birthday: userData!.birthday, pets: userData!.pets));
       }
     );
   }

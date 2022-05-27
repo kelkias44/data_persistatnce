@@ -1,52 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:moor/screen/note_list_page.dart';
-import 'package:provider/provider.dart';
+import 'package:shared_preference/data/data_source/local_data_source.dart';
+import 'package:shared_preference/presentation/bloc/bloc/user_data_bloc.dart';
+import 'package:shared_preference/service_locator.dart';
 
-import 'database/database.dart';
+import 'presentation/pages/user_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocalDataStorageImpl().init();
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return Provider(
-      create: (context) => AppDatabase(),
+    return BlocProvider<UserDataBloc>(
+      create: (_) => sl<UserDataBloc>(),
       child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Flutter Demo',
+        title: 'shared_preference',
         theme: ThemeData(
-          primarySwatch: Colors.deepOrange,
-          textTheme: const TextTheme(
-            headline5: TextStyle(
-                fontFamily: 'Sans',
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 24),
-            bodyText2: TextStyle(
-                fontFamily: 'Sans',
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 20),
-            bodyText1: TextStyle(
-                fontFamily: 'Sans',
-                fontWeight: FontWeight.normal,
-                color: Colors.black,
-                fontSize: 18),
-            subtitle2: TextStyle(
-                fontFamily: 'Sans',
-                fontWeight: FontWeight.normal,
-                color: Colors.black,
-                fontSize: 14),
-          ),
+          primarySwatch: Colors.blue,
         ),
-        home: const NoteListPage(),
+        home: HomePage(),
       ),
     );
   }
 }
-
